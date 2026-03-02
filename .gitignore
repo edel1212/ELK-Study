@@ -1,0 +1,41 @@
+### Spring Boot ###
+logging-server/HELP.md
+logging-server/.gradle/
+logging-server/build/
+
+!logging-server/gradle/wrapper/gradle-wrapper.jar
+!logging-server/**/src/main/**/build/
+!logging-server/**/src/test/**/build/
+
+### STS ###
+logging-server/.apt_generated/
+logging-server/.classpath
+logging-server/.factorypath
+logging-server/.project
+logging-server/.settings/
+logging-server/.springBeans
+logging-server/.sts4-cache/
+logging-server/bin/
+
+!logging-server/**/src/main/**/bin/
+!logging-server/**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+logging-server/.idea/
+logging-server/*.iws
+logging-server/*.iml
+logging-server/*.ipr
+logging-server/out/
+
+!logging-server/**/src/main/**/out/
+!logging-server/**/src/test/**/out/
+
+### NetBeans ###
+logging-server/nbproject/private/
+logging-server/nbbuild/
+logging-server/dist/
+logging-server/nbdist/
+logging-server/.nb-gradle/
+
+### VS Code ###
+logging-server/.vscode/
