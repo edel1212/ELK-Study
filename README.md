@@ -42,6 +42,7 @@
 - 로깅 프레임워크들을 추상화한 **인터페이스(Facade)** 이다.
   - `Logback, Log4j, Log4j2` 등등 ...
 - **장점**: `@Slf4j`를 사용하면 코드 변경 없이 설정(의존성)만으로 `Logback -> Log4j2` 등으로 **손쉽게 전환** 할 수 있다.
+  - `@Slf4j`을 사용하기 위해서는 **롬복 의존성 주입 필요**
 
 ## Checked Exception / Unchecked Exception
 
@@ -115,5 +116,4 @@ public class GlobalExceptionHandler {
     - 최근 개발 트렌드: 최근에는 커스텀 예외를 만들 때 대부분 `Unchecked Exception(RuntimeException)을` 상속받아 구현
     - `Checked Exception`은 중간 계층의 코드들이 본인과 상관없는 예외까지 전부 throws로 던져야 해서 **코드가 지저분**해지는 단점이 있음(의존성 전파)
     - 예외가 발생했을 때 로직 내에서 복구하기보다는 빠르게 사용자에게 에러 응답(4xx, 5xx)을 내려주는 것이 더 적합
-- # `Unchecked Exception`는 기본적으로 **트랜잭션이 롤백** 가능 (시스템적인 '오류'로 간주하기 때문입니다.)
-  - `@Slf4j`을 사용하기 위해서는 **롬복 의존성 주입 필요**
+- `Unchecked Exception`는 기본적으로 **트랜잭션이 롤백** 가능 (시스템적인 '오류'로 간주하기 때문입니다.)
