@@ -1,3 +1,8 @@
 spring:
   application:
     name: logging-server
+
+logging:
+  level:
+    root: INFO        # 전체 애플리케이션의 기본 레벨은 INFO로 유지 (필수)
+    com.yoo: DEBUG    # 내가 작성한 패키지(com.yoo) 하위의 로그만 DEBUG까지 출력 허용 - 불필요 로그 제거
