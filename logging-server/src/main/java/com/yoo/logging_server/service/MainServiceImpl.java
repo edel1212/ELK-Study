@@ -9,8 +9,13 @@ import org.springframework.stereotype.Service;
 public class MainServiceImpl implements MainService{
     @Override
     public String registerItem(RegisterItemRequestDto registerItemRequestDto) {
+        log.debug("Entity 변경 내역 Log 저장");
+        return "OK";
+    }
 
-        log.debug("Entity 변경 내역 ~~~ 작성");
+    @Override
+    public String modifyItem(String itemId, RegisterItemRequestDto registerItemRequestDto) {
+        log.debug("Entity 수정 내역 Log 저장");
         return "OK";
     }
 }

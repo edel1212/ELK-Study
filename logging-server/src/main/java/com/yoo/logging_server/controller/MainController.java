@@ -22,6 +22,11 @@ public class MainController {
         throw new NotFoundItemException(itemId);
     }
 
+    @GetMapping("/info")
+    public ResponseEntity<String> getQueryParam(String itemId){
+        return ResponseEntity.ok("return to QueryParam");
+    }
+
     @GetMapping
     public ResponseEntity<String> makeCheckedException() throws Exception{
         // 에러 생성
@@ -30,8 +35,11 @@ public class MainController {
 
     @PostMapping
     public ResponseEntity<String> registerItem(@RequestBody RegisterItemRequestDto registerItemRequestDto){
-        log.debug("request-body : {}", registerItemRequestDto);
         return ResponseEntity.ok(mainService.registerItem(registerItemRequestDto));
     }
 
+    @PatchMapping("/{itemId}")
+    public ResponseEntity<String> modifyItem(@PathVariable String itemId, @RequestBody RegisterItemRequestDto registerItemRequestDto){
+        return ResponseEntity.ok(mainService.modifyItem(itemId, registerItemRequestDto));
+    }
 }
