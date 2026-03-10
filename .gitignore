@@ -41,3 +41,6 @@ logging-server/.nb-gradle/
 logging-server/.vscode/
 
 .idea/
+
+## log file
+**/logs
