@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Step 1: 콘솔 출력용 Appender 정의 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- 로그 메시지 포맷 설정 -->
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss}:%-4relative] %green([%thread]) %highlight(%-5level) %boldWhite([%C.%M:%yellow(%L)]) - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Step 2: 파일 출력용 Appender 정의 (롤링 기능 포함) -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 저장될 로그 파일 명 -->
+        <file>logs/app.log</file>
+
+        <!--  롤링 설정      -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 새 파일이 만들어지는 규칙 (시간 + 순번) -->
+            <fileNamePattern>logs/application.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <!--  파일 하나가 가질 수 있는 최대 용량을 제한합니다 -->
+            <maxFileSize>100MB</maxFileSize>
+            <!-- 최대 보관 기한 기준은 "%d{yyyy-MM-dd_HH-mm}"의 마지막 시간 단위를 따름 (오래된 로그 삭제) -->
+            <maxHistory>30</maxHistory>
+            <!-- 전체 로그 폴더의 최대 크기 (폴더 사이즈를 넘어서면 기준이 맞지 않아도 이전 로그 삭제)  -->
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Step 3: 루트 로거 설정 (전체 애플리케이션 기본 설정) -->
+    <springProfile name="local | default">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+            <appender-ref ref="FILE" />
+        </root>
+    </springProfile>
+
+
+</configuration>
