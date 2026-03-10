@@ -141,3 +141,56 @@ public class GlobalExceptionHandler {
   - **사용처** :
     - DB 연결 실패
     - 타 시스템과 연계 시 명세와 다른 값/에러를 전달받아 파싱에 실패한 경우 -`NullPointerException` 등의 시스템 예외 발생
+
+## logback.xml - Appender 종류
+
+> 실무에서 사용 자주 사용하지 않는 "SMTPAppender" 와 "DBAppender"는 제외 함
+
+### ConsoleAppender
+
+- 콘솔 화면에 로그를 출력하도록 설정. 주로 로컬 개발 환경에서 즉각적인 피드백을 위해 사용
+
+```xml
+<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+  <!-- 로그 메시지 포맷 설정 -->
+  <encoder>
+      <charset>UTF-8</charset>
+      <pattern>[%d{yyyy-MM-dd HH:mm:ss}:%-4relative] %green([%thread]) %highlight(%-5level) %boldWhite([%C.%M:%yellow(%L)]) - %msg%n</pattern>
+  </encoder>
+</appender>
+```
+
+## RollingFileAppender
+
+> FileAppender또한 존재 하지만 기본 저장만하는 Apender이며, "RollingFileAppender"가 더 상위 기능 제공
+
+- 날짜나 파일 크기 기준으로 기존 파일을 백업하고 새로운 로그 파일을 생성.
+- 압축하여 저장하면 저장공간 확보에 효율적이다 (`.gz`)
+
+```xml
+<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+  <!-- 저장될 로그 파일 명 -->
+  <file>logs/app.log</file>
+
+  <!--  롤링 설정      -->
+  <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <!-- 새 파일이 만들어지는 규칙 (시간 + 순번) -->
+      <fileNamePattern>logs/application.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+      <!--  파일 하나가 가질 수 있는 최대 용량을 제한합니다 -->
+      <maxFileSize>100MB</maxFileSize>
+      <!-- 최대 보관 기한 기준은 "%d{yyyy-MM-dd_HH-mm}"의 마지막 시간 단위를 따름 (오래된 로그 삭제) -->
+      <maxHistory>30</maxHistory>
+      <!-- 전체 로그 폴더의 최대 크기 (폴더 사이즈를 넘어서면 기준이 맞지 않아도 이전 로그 삭제)  -->
+      <totalSizeCap>3GB</totalSizeCap>
+  </rollingPolicy>
+
+  <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+  </encoder>
+</appender>
+```
+
+## AsyncAppender (성능 최적화용)
+
+- 로그 기록 작업을 메인 스레드가 아닌 별도의 백그라운드 스레드에서 비동기(`Asynchronous`)로 처리하도록 위임
+- 디스크 I/O 병목으로 인한 API 응답 속도 저하를 막기 위해 대규모 트래픽 서버에서 사용
