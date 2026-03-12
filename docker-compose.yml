@@ -1,0 +1,36 @@
+services:
+  # 1. Elasticsearch: 로그 데이터를 저장하고 검색하는 핵심 엔진
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node # 클러스터 구성 없이 단일 노드로 실행
+      - xpack.security.enabled=false # 로컬 테스트를 위해 비밀번호 인증 비활성화
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m # 메모리 제한
+    ports:
+      - "9200:9200"
+    networks:
+      - elk-network
+
+  # 2. Logstash: 데이터를 받아서 가공한 뒤 Elasticsearch로 쏴주는 파이프라인
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.0
+    container_name: logstash
+    # Logstash 설정
+    volumes:
+      - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      # 로그 파일 위치 볼륨 지정
+      - /Users/yoo/Desktop/Project/ELK-Study/logging-server/logs:/usr/share/logstash/spring-logs
+    ports:
+      - "9600:9600" # 상태 모니터링 API 포트 (선택)
+    environment:
+      - LS_JAVA_OPTS=-Xms256m -Xmx256m
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk-network
+
+# 네트워크 설정
+networks:
+  elk-network:
+    driver: bridge
