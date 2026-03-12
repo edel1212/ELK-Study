@@ -44,3 +44,5 @@ logging-server/.vscode/
 
 ## log file
 **/logs
+
+**.DS_Store
