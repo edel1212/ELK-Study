@@ -194,3 +194,73 @@ public class GlobalExceptionHandler {
 
 - 로그 기록 작업을 메인 스레드가 아닌 별도의 백그라운드 스레드에서 비동기(`Asynchronous`)로 처리하도록 위임
 - 디스크 I/O 병목으로 인한 API 응답 속도 저하를 막기 위해 대규모 트래픽 서버에서 사용
+
+## Profile별 Logback 설정
+
+> "logback-spring.xml" 파일 네임이어야 한다.
+
+- **변수의 동적 할당**
+  - `<springProfile name="{{profile}}">` 블럭 내 필요한 정보를 주입하여 운영환경에 따라 설정을 바꿀 수 있다.
+  - `<springProfile` 태그는 여러개 사용할 수 있다 **위부터 아래로 내려가며 설정**을 진행함
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8"?>
+  <configuration>
+    <!-- 로그 패턴 -->
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" />
+
+    <!-- DEV 일 경우 파일 저장 경로 지정 -->
+    <springProfile name="dev">
+        <property name="LOG_DIR" value="C:/logs/logging-server" />
+    </springProfile>
+
+    <!-- prod 일 경우 파일 저장 경로 지정 -->
+    <springProfile name="prod">
+        <property name="LOG_DIR" value="/var/log/logging-server" />
+    </springProfile>
+
+    <!-- CONSOLE 방식 지정 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- FILE 저장 방식 지정 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/app.log</file>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/application.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- local 사용 기능 설정 -->
+    <springProfile name="local">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+        </root>
+    </springProfile>
+
+    <springProfile name="dev">
+        <root level="INFO">
+            <appender-ref ref="FILE" />
+        </root>
+    </springProfile>
+
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="FILE" />
+        </root>
+    </springProfile>
+  ```
+
+</configuration>
+  ```
