@@ -242,7 +242,7 @@ public class GlobalExceptionHandler {
         </encoder>
     </appender>
 
-    <!-- local 사용 기능 설정 -->
+    <!-- profile별 사용 기능 설정 -->
     <springProfile name="local">
         <root level="INFO">
             <appender-ref ref="CONSOLE" />
@@ -264,3 +264,12 @@ public class GlobalExceptionHandler {
 
 </configuration>
   ```
+
+## Logstash & Elasticsearch 연동 (파일 수집 방식)
+
+> `docker-compose`를 사용하여 진행 - [참고]("https://github.com/edel1212/ELK-Study/blob/main/docker-compose.yml")  
+> `http://elasticsearch:9200/_cat/indices` 를 통해 등록된 로그의 색인을 확인 할 수 있다.
+
+- 흐름 : 로그 파일 생성 -> Logstahs에서 해당 로그파일을 직접 수집 후 elasticsearch에 전달
+  - logstahs 와 elasticsearch는 다른 서버로 기동 중
+- Logstash의 경우 logstash.conf 파일 내 input, output 설정이 필요함
