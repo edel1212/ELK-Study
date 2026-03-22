@@ -267,12 +267,81 @@ public class GlobalExceptionHandler {
 
 ## Logstash & Elasticsearch 연동 (파일 수집 방식)
 
-> `docker-compose`를 사용하여 진행 - [참고]("https://github.com/edel1212/ELK-Study/blob/main/docker-compose.yml")  
+> 실습 환경: `docker-compose`를 사용하여 독립된 컨테이너 환경에서 구성 🔗[docker-compose.yml 참고 링크]("https://github.com/edel1212/ELK-Study/blob/main/docker-compose.yml")
+
+## 전체 데이터 수집 흐름
+
+- [Spring Boot](서버) 로그 파일(app.log) 생성
+  - 저장되는 로그의 형식은 `JSON`구조로 저장되어야 함
+- [Logstash] 로그 파일을 직접 감시(Tail) 및 수집
+- [Elasticsearch] Logstash가 가공해서 전달한 로그 데이터를 수신하여 색인(Indexing) 및 저장
+
 > `http://elasticsearch:9200/_cat/indices?v` 를 통해 등록된 로그 색인을 확인 가능.
 > `http://localhost:9200/{{index}}/_search` 를 통해 지정 index의 로그 확인 가능
 
-- Spring 서버 내 로그 저장 시 `logstash-logback-encoder`의존성 추가 및 logback.xml 을 설정하지 않으면 로그가 JSON 구조가 아니기에 정상적으로 볼 수 없다.
-  - 현대에는 로그를 보는 방식이 전부 JSON 구조로 변경 되었음
+## Logstash 파이프라인 설정
+
+> `logstash.conf` 파일내 설정이 가능하다.
+
+- **두 가지 핵심 구역**
+  - `input`: 어디서 데이터를 가져올 것인가? (예: file 플러그인으로 특정 경로의 파일 읽기)
+  - `output`: 어디로 데이터를 보낼 것인가? (예: elasticsearch 플러그인으로 ES 호스트와 인덱스명 지정)
+
+```shell
+# 1. Input: 어디서 로그를 받을 것인가?
+input {
+    #################################3
+    # Spring Boot에서 LogstashTcpSocketAppender를 사용하여 5000번 포트 주는 JSON 로그을 받을 경우
+    #   tcp {
+    #     port => 5000
+    #     codec => json_lines
+    #   }
+    #################################3
+
+    # File을 직접 읽어서 진행할 경우
+    file {
+        # 컨테이너 내부에서 로그 파일이 위치할 경로 ( docker volume 설정된 )
+        path => "/usr/share/logstash/spring-logs/*.log"
+
+        # 처음 실행될 때 파일의 처음부터 읽을지(beginning), 끝부터 읽을지(end) 결정
+        start_position => "beginning"
+
+        # (선택) JSON 형태로 저장된 로그라면 자동으로 파싱하도록 설정
+        codec => "json"
+    }
+}
+
+# 2. Filter: 데이터를 가공할 경우 설정 진행
+filter {
+  # 필요하다면 여기서 특정 문자열을 자르거나 IP를 위치로 변환하는 작업을 합니다.
+}
+
+# 3. Output: 어디로 로그를 보낼 것인가?
+output {
+  # Elasticsearch로 전송
+  elasticsearch {
+    hosts => ["http://elasticsearch:9200"]
+    index => "spring-boot-logs-%{+YYYY.MM.dd}" # 매일매일 새로운 인덱스(테이블) 생성
+  }
+
+  # 데이터가 잘 들어오는지 Logstash 컨테이너 로그(화면)에서도 확인하기 위함
+  stdout {
+    codec => rubydebug
+  }
+}
+```
+
+## Spring Boot 로깅 저장 시 주의사항
+
+### `JSON` 구조 로깅 선택이 아닌 '필수'
+
+- `logstash-logback-encoder` **의존성을 추가** 후 `logback-spring.xml`에서 log file 저장을 **JSON 인코더를 설정** 필요
+  - 진행하지 않으면, **Logstash**가 로그를 제대로 해석하지 못해 `_jsonparsefailure` 에러가 발생
+- 에러 스택 트레이스(수십 줄의 에러)가 **여러 개의 로그로 찢어지는 것을 막기 위해**서라도 파일에는 반드시 `JSON` 형태로 남겨야 한다.
+- **💡 현대 실무 표준**: 사람이 읽기 편한 텍스트 원본 로그 대신, 기계가 파싱하기 완벽한 JSON 구조로 로그를 저장하고 조회하는 것이 트렌드이다.
+
+- application.yml에 설정된 로그 레벨이 가장 순위가 높기에 logback.xml에 설정된 값 보다 우선 시 되어 꼬일 경우가 있다.
+  - 저장 및 console에 나오게 하는 로그 레벨 설정은 되도록 이면 logback.xml에서 진행하자
 
 - google : "Multi Elasticsearch Heads" 익스텐션을 사용하면 쉽게 로그 확인이 가능함
 - 흐름 : 로그 파일 생성 -> Logstahs에서 해당 로그파일을 직접 수집 후 elasticsearch에 전달
