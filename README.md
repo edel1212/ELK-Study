@@ -269,17 +269,14 @@ public class GlobalExceptionHandler {
 
 > 실습 환경: `docker-compose`를 사용하여 독립된 컨테이너 환경에서 구성 🔗[docker-compose.yml 참고 링크]("https://github.com/edel1212/ELK-Study/blob/main/docker-compose.yml")
 
-## 전체 데이터 수집 흐름
+### 전체 데이터 수집 흐름
 
 - [Spring Boot](서버) 로그 파일(app.log) 생성
   - 저장되는 로그의 형식은 `JSON`구조로 저장되어야 함
 - [Logstash] 로그 파일을 직접 감시(Tail) 및 수집
 - [Elasticsearch] Logstash가 가공해서 전달한 로그 데이터를 수신하여 색인(Indexing) 및 저장
 
-> `http://elasticsearch:9200/_cat/indices?v` 를 통해 등록된 로그 색인을 확인 가능.
-> `http://localhost:9200/{{index}}/_search` 를 통해 지정 index의 로그 확인 가능
-
-## Logstash 파이프라인 설정
+### Logstash 파이프라인 설정
 
 > `logstash.conf` 파일내 설정이 가능하다.
 
@@ -331,19 +328,31 @@ output {
 }
 ```
 
-## Spring Boot 로깅 저장 시 주의사항
+### Spring Boot 로깅 저장 시 주의사항
 
-### `JSON` 구조 로깅 선택이 아닌 '필수'
+#### `JSON` 구조 로깅 선택이 아닌 '필수'
 
 - `logstash-logback-encoder` **의존성을 추가** 후 `logback-spring.xml`에서 log file 저장을 **JSON 인코더를 설정** 필요
   - 진행하지 않으면, **Logstash**가 로그를 제대로 해석하지 못해 `_jsonparsefailure` 에러가 발생
 - 에러 스택 트레이스(수십 줄의 에러)가 **여러 개의 로그로 찢어지는 것을 막기 위해**서라도 파일에는 반드시 `JSON` 형태로 남겨야 한다.
 - **💡 현대 실무 표준**: 사람이 읽기 편한 텍스트 원본 로그 대신, 기계가 파싱하기 완벽한 JSON 구조로 로그를 저장하고 조회하는 것이 트렌드이다.
 
-- application.yml에 설정된 로그 레벨이 가장 순위가 높기에 logback.xml에 설정된 값 보다 우선 시 되어 꼬일 경우가 있다.
-  - 저장 및 console에 나오게 하는 로그 레벨 설정은 되도록 이면 logback.xml에서 진행하자
+### 로그 레벨 설정의 우선순위
+
+- 로그 레벨 설정의 최고 우선 순위는 `application.yml`에 설정된 로그 레벨이다.
+  - `application.yml`에 DEBUG 레벨 설정 시 `logback-spring.xml`에서 아무리 제어하려 해도 파일에 원치 않는 DEBUG 로그가 남는다.
+- **💡 해결책**: 환경별 로그 레벨 및 출력 방식은 되도록 `logback-spring.xml` **안에서 통제하는 것이 안전**하다.
 
 - google : "Multi Elasticsearch Heads" 익스텐션을 사용하면 쉽게 로그 확인이 가능함
 - 흐름 : 로그 파일 생성 -> Logstahs에서 해당 로그파일을 직접 수집 후 elasticsearch에 전달
   - logstahs 와 elasticsearch는 다른 서버로 기동 중
 - Logstash의 경우 logstash.conf 파일 내 input, output 설정이 필요함
+
+### Elasticsearch 확인 API 및 유용한 도구
+
+- **인덱스 목록 확인**: GET http://localhost:9200/\_cat/indices?v
+
+- **특정 인덱스의 로그 데이터 조회**: GET http://localhost:9200/{{index_name}}/\_search
+
+- **Chrome Extension** : "Elasticsearch Head"
+  - 터미널이나 포스트맨 없이도 브라우저에서 ES의 데이터와 클러스터 상태를 GUI로 아주 쉽고 직관적으로 확인 가능
