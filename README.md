@@ -356,3 +356,8 @@ output {
 
 - **Chrome Extension** : "Elasticsearch Head"
   - 터미널이나 포스트맨 없이도 브라우저에서 ES의 데이터와 클러스터 상태를 GUI로 아주 쉽고 직관적으로 확인 가능
+
+## Kinbana
+
+- `Analytics -> Discover -> Create data View` 지정을 통해 로그 데이터를 필터링 및 조회가 가능하다.
+  - 설정 시 `Index pattern`에 등록된 인덱스 등록 필요 -> ex) `spring-boot-logs-*`
