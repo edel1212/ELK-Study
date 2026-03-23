@@ -357,7 +357,46 @@ output {
 - **Chrome Extension** : "Elasticsearch Head"
   - 터미널이나 포스트맨 없이도 브라우저에서 ES의 데이터와 클러스터 상태를 GUI로 아주 쉽고 직관적으로 확인 가능
 
-## Kinbana
+## Kibana (데이터 시각화 및 검색 대시보드)
 
-- `Analytics -> Discover -> Create data View` 지정을 통해 로그 데이터를 필터링 및 조회가 가능하다.
-  - 설정 시 `Index pattern`에 등록된 인덱스 등록 필요 -> ex) `spring-boot-logs-*`
+> Elasticsearch에 저장된 로그 데이터를 읽기 편하게 검색\하고, 한눈에 파악할 수 있는 차트로 만들어주는 UI 도구
+
+### Data View (데이터 뷰, 구 Index Pattern)
+
+> Elasticsearch에 흩어져 있는 인덱스들을 Kibana에서 읽어 들일 수 있도록 하나로 묶어주는 역할을 한다.
+
+- **등록 경로:** `Management` -> `Stack Management` -> `Kibana` -> `Data Views` 메뉴에서 `Create data view` 클릭
+  - 참고: `Analytics -> Discover` 시 등록된 뷰가 없으면 자동으로 생성 화면으로 이동 가능함
+- **설정 방법:**
+  - **Name (Index pattern):** `spring-boot-logs-*` (와일드카드 `*`를 사용하여 날짜별로 롤링되는 모든 로그를 한 번에 매핑)
+  - **Timestamp field:** `@timestamp` (시간 기준으로 로그를 정렬하고 차트를 그리기 위한 필수 기준점)
+
+- **필터링 (KQL - Kibana Query Language):**
+  `Analytics -> Discover` 메뉴의 상단 검색창에서 사용하는 문법으로, SQL의 `WHERE` 절과 유사함
+  - **단순 검색 (포함 여부):** `message: "target"` (message 필드 문장 안에 해당 단어가 포함된 로그 검색)
+  - **정확한 일치 (Keyword 검색):** `level: "ERROR"` (로그 레벨이 정확히 ERROR인 것만 검색)
+    - ✅ 참고: `message.keyword` 처럼 `.keyword`가 붙은 필드는 띄어쓰기까지 **100% 완벽하게 일치**해야 검색됨\_
+  - **논리 연산자 (AND, OR, NOT):** - `level: "WARN" and message: "foo"` (WARN 레벨이면서 foo 관련 에러인 로그)
+    - `level: "ERROR" or level: "WARN"` (문제가 있는 로그만 추출)
+    - `not level: "DEBUG"` (쓸데없이 많은 DEBUG 로그를 화면에서 숨김)
+  - **존재 여부 검사:** `service_name: *` (service_name 필드가 존재하는 로그만 검색)
+  - **범위 검색 (Range Queries):** 숫자나 날짜 데이터 필터링 시 실무에서 가장 많이 사용됨. (대소문자 구분 없음)
+    - `status >= 400` (HTTP 상태 코드가 400 이상인 클라이언트/서버 에러만 추출)
+    - `time_ms > 1000` (응답 시간이 1초(1000ms) 이상 걸린 병목 API 추적)
+    - `@timestamp >= "now-1h"` (최근 1시간 동안 발생한 로그만 검색)
+  - **와일드카드 검색 (Wildcard):** `*`를 사용하여 특정 패턴을 포함하는 문자열 검색.
+    - `url: "/home/*"` (`/home/foo`, `/home/bar` 등 특정 경로 하위의 모든 요청 검색)
+    - `logger_name: *Exception` (클래스명이 Exception으로 끝나는 에러 로그만 추출)
+  - **그룹화 (Grouping):** 괄호 `()`를 사용하여 복잡한 논리 연산을 묶어서 처리.
+    - `level: "ERROR" and (service_name: "payment" or service_name: "order")`
+      (결제 서버나 주문 서버에서 발생한 ERROR 로그만 정확히 타겟팅)
+
+### Dashboard (대시보드)
+
+> Discover에서 검색한 데이터를 바탕으로 다양한 시각화를 제공
+
+- **등록 경로:** `Analytics` -> `Dashboard` -> `Create dashboard` -> `Create visualization`
+- **실무에서 주로 만드는 Spring Boot 로그 차트 (예시):**
+  1. **로그 레벨 비율 (Pie Chart / Donut):** 전체 로그 중 `INFO`, `WARN`, `ERROR`가 각각 몇 %를 차지하는지 한눈에 파악.
+  2. **시간대별 에러 발생량 (Bar Chart / Histogram):** X축을 `@timestamp`, Y축을 로그 개수(Count)로 두고, 레벨별로 색상을 다르게 적용. 특정 시간대 트래픽/장애 파악에 용이.
+  3. **자주 발생하는 에러 순위 (Data Table):** `logger_name`이나 에러 메시지 앞부분을 그룹화하여, 현재 가장 많이 터지고 있는 에러 TOP 5를 표 형태로 나열.
