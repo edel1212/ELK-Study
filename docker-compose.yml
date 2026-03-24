@@ -19,8 +19,6 @@ services:
     # Logstash 설정
     volumes:
       - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-      # 로그 파일 위치 볼륨 지정
-      - /Users/yoo/Desktop/Project/ELK-Study/logging-server/logs:/usr/share/logstash/spring-logs
     ports:
       - "9600:9600" # 상태 모니터링 API 포트 (선택)
     environment:
@@ -41,6 +39,21 @@ services:
       - "5601:5601" # 웹 브라우저 접속 포트
     depends_on:
       - elasticsearch
+    networks:
+      - elk-network
+
+  # 4. Filebeat: Logstash 대신 로그 파일을 읽어 Logstash에 전달 하는 역할을 함
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.12.0
+    container_name: filebeat
+    user: root # 도커 환경에서 설정 파일 권한 에러 방지용
+    volumes:
+      # Filebeat 자체 설정 파일 마운트
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      # ✅ 기존 Logstash가 하던 로그 폴더 마운트를 Filebeat가 가져옵니다!
+      - /Users/yoo/Desktop/Project/ELK-Study/logging-server/logs:/usr/share/filebeat/logs
+    depends_on:
+      - logstash
     networks:
       - elk-network
 

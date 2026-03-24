@@ -1,0 +1,14 @@
+# filebeat/filebeat.yml
+
+# 1. 로그 Input 설정
+filebeat.inputs:
+- type: filestream
+  id: spring-boot-logger
+  enabled: true
+  paths:
+    # 도커 컨테이너 내부에 마운트된 로그 경로
+    - /usr/share/filebeat/logs/*.log
+
+# 2. 어디로 로그를 보낼 곳 지정 (Logstash의 5044번 포트로 전송)
+output.logstash:
+  hosts: ["logstash:5044"]
