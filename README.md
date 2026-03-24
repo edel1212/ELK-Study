@@ -400,3 +400,54 @@ output {
   1. **로그 레벨 비율 (Pie Chart / Donut):** 전체 로그 중 `INFO`, `WARN`, `ERROR`가 각각 몇 %를 차지하는지 한눈에 파악.
   2. **시간대별 에러 발생량 (Bar Chart / Histogram):** X축을 `@timestamp`, Y축을 로그 개수(Count)로 두고, 레벨별로 색상을 다르게 적용. 특정 시간대 트래픽/장애 파악에 용이.
   3. **자주 발생하는 에러 순위 (Data Table):** `logger_name`이나 에러 메시지 앞부분을 그룹화하여, 현재 가장 많이 터지고 있는 에러 TOP 5를 표 형태로 나열.
+
+## File Beat (경량 로그 수집기)
+
+### 1. 도입 배경 및 아키텍처
+
+- **도입 배경 (Scale-out 리소스 문제):** 서버가 확장(Scale-out)될 때마다, 데이터를 가공하는 무거운 `Logstash` 굉장히 비효율적이다.
+  - JVM 기반, 메모리 소모가 큼
+  - 각 서버에 매번 설치하는 것은 서버 자원(CPU, 메모리) 측면에서 좋지 못함
+- **해결책:** 가벼운 `Filebeat` (Go 언어 기반, 10~20MB 메모리 사용)를 각 운영 서버당 한 대씩 두어 **'로그를 읽고 중앙으로 배달하는 역할'만 수행**
+- **데이터 파이프라인 구조 (N:1 통신):**
+  - `운영 서버(N대) + Filebeat(N대)` ➡️ `Logstash (1대)` ➡️ `Elasticsearch (1대)` ➡️ `Kibana (1대)`
+
+### 2. Filebeat 설정 (`filebeat.yml`)
+
+> 각 운영 서버(Spring Boot)에 설치되어 로그 파일을 감시하고 Logstash로 전달하는 역할
+
+```yaml
+# filebeat/filebeat.yml
+
+# 1. Input: 어떤 로그를 읽을 것인가?
+filebeat.inputs:
+  - type: filestream
+    id: spring-boot-logger
+    enabled: true
+    paths:
+      # Filebeat 컨테이너가 바라보는 로그 파일 경로
+      - /usr/share/filebeat/logs/*.log
+
+# 2. Output: 어디로 로그를 보낼 것인가? (Logstash의 5044번 포트로 전송)
+output.logstash:
+  hosts: ["logstash:5044"]
+```
+
+### 3. Logstash 설정 (logstash.conf)
+
+> Filebeat들이 보내오는 데이터를 받아들이기 위해 수신 항구(Port)를 열어두는 역할. (참고: Logstash 설정 파일은 conf 문법을 사용)
+
+```ruby
+# logstash/logstash.conf
+
+# 1. Input: 어디서 로그를 받을 것인가?
+input {
+  # 다수의 Filebeat로부터 로그를 입력받도록 5044 포트 개방
+  beats {
+    port => 5044
+    codec => "json" # Filebeat가 보내온 JSON 문자열을 즉시 파싱하여 필드 분리
+  }
+}
+
+# (이후 filter, output 설정은 기존과 동일)
+```
